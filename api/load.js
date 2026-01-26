@@ -50,25 +50,20 @@ async function getAccessToken() {
   const key = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
   const now = Math.floor(Date.now() / 1000);
 
-  const header = Buffer
-    .from(JSON.stringify({ alg: "RS256", typ: "JWT" }))
-    .toString("base64url");
-
-  const claim = Buffer
-    .from(JSON.stringify({
-      iss: key.client_email,
-      scope: "https://www.googleapis.com/auth/spreadsheets",
-      aud: "https://oauth2.googleapis.com/token",
-      exp: now + 3600,
-      iat: now
-    }))
-    .toString("base64url");
+  const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
+  const claim = Buffer.from(JSON.stringify({
+    iss: key.client_email,
+    scope: "https://www.googleapis.com/auth/spreadsheets",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now
+  })).toString("base64url");
 
   const data = `${header}.${claim}`;
   const sign = crypto.createSign("RSA-SHA256");
   sign.update(data);
-
   const signature = sign.sign(key.private_key, "base64url");
+
   const jwt = `${data}.${signature}`;
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
@@ -81,9 +76,7 @@ async function getAccessToken() {
   });
 
   const tokenData = await res.json();
-  if (!tokenData.access_token) {
-    throw new Error("Failed to get access token");
-  }
-
+  if (!tokenData.access_token) throw new Error("Failed to get access token");
   return tokenData.access_token;
 }
+
