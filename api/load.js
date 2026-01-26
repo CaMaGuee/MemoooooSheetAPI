@@ -1,43 +1,55 @@
 import crypto from "crypto";
 
 export default async function handler(req, res) {
+  // ===============================
+  // CORS 설정
+  // ===============================
   res.setHeader("Access-Control-Allow-Origin", "https://camaguee.github.io");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "GET") return res.status(405).end();
+  if (req.method !== "GET") return res.status(405).json({ error: "Method Not Allowed" });
 
   const userId = req.query.userId;
   if (!userId) return res.status(400).json({ error: "userId required" });
 
   try {
+    // ===============================
+    // 서비스 계정 토큰 발급
+    // ===============================
     const token = await getAccessToken();
 
+    // ===============================
+    // Google Sheets API 호출
+    // ===============================
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${process.env.SPREADSHEET_ID}/values/Memooooo`;
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
     if (!response.ok) {
-      return res.status(200).json({ Memooooo: [] });
+      const text = await response.text(); // 실제 오류 메시지 확인
+      console.error("Google Sheets API Error:", text);
+      return res.status(500).json({ error: "Failed to fetch sheet data", detail: text });
     }
 
     const data = await response.json();
     const rows = data.values || [];
 
-    const memos = (rows.slice(1) || []).filter(row => row && row[0] === userId).map(row => ({
-      subject: row?.[1] ?? "",
-      date: row?.[2] ?? "",
-      text: row?.[3] ?? ""
-    }));
-
+    const memos = (rows.slice(1) || [])
+      .filter(row => row && row[0] === userId)
+      .map(row => ({
+        subject: row?.[1] ?? "",
+        date: row?.[2] ?? "",
+        text: row?.[3] ?? ""
+      }));
 
     res.status(200).json({ Memooooo: memos });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to load memos" });
+    console.error("API Handler Error:", err);
+    res.status(500).json({ error: "Failed to load memos", detail: err.message });
   }
 }
 
@@ -45,7 +57,17 @@ export default async function handler(req, res) {
    Google Service Account Auth
 ================================ */
 async function getAccessToken() {
-  const key = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT) {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT env not found");
+  }
+
+  let key;
+  try {
+    key = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
+  } catch (err) {
+    throw new Error("Failed to parse GOOGLE_SERVICE_ACCOUNT JSON");
+  }
+
   const now = Math.floor(Date.now() / 1000);
 
   const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
@@ -74,8 +96,10 @@ async function getAccessToken() {
   });
 
   const tokenData = await res.json();
-  if (!tokenData.access_token) throw new Error("Failed to get access token");
+  if (!tokenData.access_token) {
+    console.error("Failed to get access token:", tokenData);
+    throw new Error("Failed to get access token");
+  }
+
   return tokenData.access_token;
 }
-
-
