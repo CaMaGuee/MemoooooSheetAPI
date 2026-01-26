@@ -1,9 +1,6 @@
 import crypto from "crypto";
 
 export default async function handler(req, res) {
-  // ===============================
-  // CORS 설정
-  // ===============================
   res.setHeader("Access-Control-Allow-Origin", "https://camaguee.github.io");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -15,26 +12,25 @@ export default async function handler(req, res) {
   if (!userId) return res.status(400).json({ error: "userId required" });
 
   try {
-    // ===============================
-    // 서비스 계정 토큰 발급
-    // ===============================
+    // 토큰 발급
     const token = await getAccessToken();
 
-    // ===============================
     // Google Sheets API 호출
-    // ===============================
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${process.env.SPREADSHEET_ID}/values/Memooooo`;
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
+    const text = await response.text(); // 실제 오류 메시지
     if (!response.ok) {
-      const text = await response.text(); // 실제 오류 메시지 확인
       console.error("Google Sheets API Error:", text);
-      return res.status(500).json({ error: "Failed to fetch sheet data", detail: text });
+      return res.status(500).json({ 
+        error: "Failed to fetch sheet data", 
+        detail: text // 실제 오류 메시지 클라이언트에 전달
+      });
     }
 
-    const data = await response.json();
+    const data = JSON.parse(text);
     const rows = data.values || [];
 
     const memos = (rows.slice(1) || [])
@@ -103,4 +99,3 @@ async function getAccessToken() {
 
   return tokenData.access_token;
 }
-
