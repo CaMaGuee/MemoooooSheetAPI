@@ -1,18 +1,12 @@
 import crypto from "crypto";
 
-const SHEETS = {
-  annual: "annualOccurrences",
-  weekendSub: "weekendSubHolidays",
-  usedAnnual: "usedHolidays",
-  usedSub: "usedSubHolidays"
-};
-
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "https://camaguee.github.io");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "GET") return res.status(405).end();
 
   const userId = req.query.userId;
   if (!userId) return res.status(400).json({ error: "userId required" });
@@ -20,79 +14,61 @@ export default async function handler(req, res) {
   try {
     const token = await getAccessToken();
 
-    const result = {
-      annualOccurrences: [],
-      weekendSubHolidays: [],
-      usedHolidays: [],
-      usedSubHolidays: []
-    };
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${process.env.SPREADSHEET_ID}/values/Memooooo`;
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-    // 각 시트별로 데이터 가져오기
-    for (const [key, sheetName] of Object.entries(SHEETS)) {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${process.env.SPREADSHEET_ID}/values/${sheetName}`;
-      const response = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (!response.ok) continue; // 시트가 없어도 에러 안 나게
-
-      const data = await response.json();
-      const rows = data.values || [];
-
-      // 헤더 행 제외 (첫 번째 행이 헤더라고 가정)
-      const userRows = rows.slice(1).filter(row => row[0] === userId);
-
-      if (key === "annual") {
-        result.annualOccurrences = userRows.map(row => ({
-          id: Number(row[1]),
-          date: row[2],
-          remaining: Number(row[3])
-        }));
-      } else if (key === "weekendSub") {
-        result.weekendSubHolidays = userRows.map(row => ({
-          date: row[1],
-          weekday: row[2]
-        }));
-      } else if (key === "usedAnnual") {
-        result.usedHolidays = userRows.map(row => ({
-          date: row[1],
-          weekday: row[2],
-          amount: Number(row[3])
-        }));
-      } else if (key === "usedSub") {
-        result.usedSubHolidays = userRows.map(row => ({
-          date: row[1],
-          weekday: row[2]
-        }));
-      }
+    if (!response.ok) {
+      return res.status(200).json({ Memooooo: [] });
     }
 
-    res.status(200).json(result);  // 프론트에서 rows[0]으로 접근하도록
+    const data = await response.json();
+    const rows = data.values || [];
+
+    const memos = rows
+      .slice(1) // header 제거
+      .filter(row => row[0] === userId)
+      .map(row => ({
+        subject: row[1] ?? "",
+        date: row[2] ?? "",
+        text: row[3] ?? ""
+      }));
+
+    res.status(200).json({ Memooooo: memos });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to load data" });
+    res.status(500).json({ error: "Failed to load memos" });
   }
 }
 
-// getAccessToken 함수는 이전과 동일 (생략)
+/* ===============================
+   Google Service Account Auth
+================================ */
 async function getAccessToken() {
   const key = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
   const now = Math.floor(Date.now() / 1000);
 
-  const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
-  const claim = Buffer.from(JSON.stringify({
-    iss: key.client_email,
-    scope: "https://www.googleapis.com/auth/spreadsheets",
-    aud: "https://oauth2.googleapis.com/token",
-    exp: now + 3600,
-    iat: now
-  })).toString("base64url");
+  const header = Buffer
+    .from(JSON.stringify({ alg: "RS256", typ: "JWT" }))
+    .toString("base64url");
+
+  const claim = Buffer
+    .from(JSON.stringify({
+      iss: key.client_email,
+      scope: "https://www.googleapis.com/auth/spreadsheets",
+      aud: "https://oauth2.googleapis.com/token",
+      exp: now + 3600,
+      iat: now
+    }))
+    .toString("base64url");
 
   const data = `${header}.${claim}`;
   const sign = crypto.createSign("RSA-SHA256");
   sign.update(data);
-  const signature = sign.sign(key.private_key, "base64url");
 
+  const signature = sign.sign(key.private_key, "base64url");
   const jwt = `${data}.${signature}`;
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
@@ -105,7 +81,9 @@ async function getAccessToken() {
   });
 
   const tokenData = await res.json();
-  if (!tokenData.access_token) throw new Error("Failed to get access token");
+  if (!tokenData.access_token) {
+    throw new Error("Failed to get access token");
+  }
+
   return tokenData.access_token;
 }
-
