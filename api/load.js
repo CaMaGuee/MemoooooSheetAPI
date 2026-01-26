@@ -26,14 +26,12 @@ export default async function handler(req, res) {
     const data = await response.json();
     const rows = data.values || [];
 
-    const memos = rows
-      .slice(1) // header 제거
-      .filter(row => row[0] === userId)
-      .map(row => ({
-        subject: row[1] ?? "",
-        date: row[2] ?? "",
-        text: row[3] ?? ""
-      }));
+    const memos = (rows.slice(1) || []).filter(row => row && row[0] === userId).map(row => ({
+      subject: row?.[1] ?? "",
+      date: row?.[2] ?? "",
+      text: row?.[3] ?? ""
+    }));
+
 
     res.status(200).json({ Memooooo: memos });
 
@@ -79,4 +77,5 @@ async function getAccessToken() {
   if (!tokenData.access_token) throw new Error("Failed to get access token");
   return tokenData.access_token;
 }
+
 
