@@ -1,0 +1,13 @@
+{
+  "headers": [
+    {
+      "source": "/api/save",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "https://camaguee.github.io" },
+        { "key": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" },
+        { "key": "Access-Control-Max-Age", "value": "86400" }  // preflight 캐시 1일
+      ]
+    }
+  ]
+}
