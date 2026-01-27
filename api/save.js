@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     console.log("[Vercel] Save 요청 전달", {
       userId,
       count: Memooooo.length,
-      data: Memooooo
+      Memooooo
     });
 
     /* ===============================
@@ -73,6 +73,7 @@ export default async function handler(req, res) {
     });
   }
 }
+
 
 
 
