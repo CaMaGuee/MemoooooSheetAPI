@@ -38,8 +38,10 @@ export default async function handler(req, res) {
       .map(row => ({
         subject: row?.[1] ?? "",
         date: row?.[2] ?? "",
-        text: row?.[3] ?? ""
+        text: row?.[3] ?? "",
+        classification_code: row?.[4] ?? ""  // 반드시 추가
       }));
+
 
     res.status(200).json({ Memooooo: memos });
 
@@ -99,3 +101,4 @@ async function getAccessToken() {
 
   return tokenData.access_token;
 }
+
