@@ -37,11 +37,12 @@ export default async function handler(req, res) {
       });
     }
 
-    const appsScriptUrl = "https://script.google.com/macros/s/AKfycbxQFbW1iG3uIBW6_dmEv-N0pJG4m_LGK30DNVNm479_kjUrzXoyoZAIEhasajhXF3g4fQ/exec";
+    const appsScriptUrl = "https://script.google.com/macros/s/AKfycbw_ydFyZ9PptJdTTa8zESWjcEPTKb3lgNws_Sa1YnxN4eMp6tk_LnzL0D4f33IXGuriCQ/exec";
 
     console.log("[Vercel] Save 요청 전달", {
       userId,
-      count: Memooooo.length
+      count: Memooooo.length,
+      data: Memooooo
     });
 
     /* ===============================
@@ -72,6 +73,7 @@ export default async function handler(req, res) {
     });
   }
 }
+
 
 
 
