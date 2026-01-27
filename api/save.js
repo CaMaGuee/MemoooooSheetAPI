@@ -41,9 +41,8 @@ export default async function handler(req, res) {
 
     console.log("[Vercel] Save 요청 전달", {
       userId,
-      count: Memooooo.length,
-      Memooooo
-    });
+      count: Memooooo.length
+    }, Memooooo);
 
     /* ===============================
        Apps Script로 그대로 전달
@@ -73,6 +72,7 @@ export default async function handler(req, res) {
     });
   }
 }
+
 
 
 
