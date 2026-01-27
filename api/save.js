@@ -37,7 +37,7 @@ export default async function handler(req, res) {
       });
     }
 
-    const appsScriptUrl = "https://script.google.com/macros/s/AKfycbzK3qKePMOdT25xIVI7CNVsS7XMOdDxKwGt8D9nJG9x1QGBCR59rZl5Fprj0dNBQcH_Cg/exec";
+    const appsScriptUrl = "https://script.google.com/macros/s/AKfycbznxi46e0LYqp0OtRCnjbmzu7Zf1CGA7mvhY04rT_LPAo9ybM-9V_YujJCWv7Gdneb41Q/exec";
 
     console.log("[Vercel] Save 요청 전달", {
       userId,
@@ -72,6 +72,7 @@ export default async function handler(req, res) {
     });
   }
 }
+
 
 
 
